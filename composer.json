@@ -1,0 +1,30 @@
+{
+    "name": "jianyan74/yii2-websocket",
+    "description": "yii2 websocket",
+    "keywords": [
+        "yii",
+        "yii2",
+        "swoole",
+        "websocket",
+        "php",
+        "jianyan74"
+    ],
+    "authors": [
+        {
+            "name": "简言",
+            "email": "751393839@qq.com"
+        }
+    ],
+    "type": "project",
+    "license": "Apache-2.0",
+    "homepage": "https://github.com/jianyan74/yii2-websocket",
+    "require": {
+        "php": ">=7.0",
+        "yiisoft/yii2": ">=2.0.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "jianyan\\websocket\\": ""
+        }
+    }
+}

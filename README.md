@@ -13,13 +13,15 @@
  ```
 ### 安装
   
+composer执行
+
 ```
-# composer执行
-
 composer require "jianyan74/yii2-websocket"
+```
 
-或者加入
+或者在 `composer.json` 加入
 
+```
 "jianyan74/yii2-websocket": "^1.0"
 ```
 ### 配置

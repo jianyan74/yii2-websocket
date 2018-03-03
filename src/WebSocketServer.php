@@ -1,5 +1,5 @@
 <?php
-namespace jianyan74\websocket;
+namespace jianyan\websocket;
 
 use Yii;
 use swoole_table;

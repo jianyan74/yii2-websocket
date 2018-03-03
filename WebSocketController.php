@@ -4,19 +4,23 @@ namespace jianyan\websocket;
 use Yii;
 use yii\console\Controller;
 use yii\helpers\FileHelper;
-use jianyan\websocket\WebSocket;
 
 /**
- * WebSocket
  * 启动 php ./yii web-socket/start
  * 停止 php ./yii web-socket/stop
  * 重启 php ./yii web-socket/restart
- *
  * Class WebSocketController
- * @package console\controllers
+ * @package jianyan\websocket
  */
 class WebSocketController extends Controller
 {
+    /**
+     * 实例化服务
+     *
+     * @var
+     */
+    public $server;
+
     /**
      * 监听地址
      *
@@ -75,7 +79,7 @@ class WebSocketController extends Controller
         $this->setPid();
 
         // 运行
-        $ws = new WebSocket($this->host, $this->port, $this->mode, $this->socketType, $this->config);
+        $ws = new $this->server($this->host, $this->port, $this->mode, $this->socketType, $this->config);
         $ws->run();
 
         $this->stdout("服务正在运行,监听 {$this->host}:{$this->port}" . PHP_EOL);

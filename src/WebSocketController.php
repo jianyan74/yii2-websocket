@@ -4,7 +4,7 @@ namespace jianyan74\websocket;
 use Yii;
 use yii\console\Controller;
 use yii\helpers\FileHelper;
-use common\components\WebSocket;
+use jianyan\websocket\WebSocket;
 
 /**
  * WebSocket

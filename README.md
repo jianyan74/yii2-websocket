@@ -2,7 +2,9 @@
 
 即时通讯,直播间demo
 
-### 前提安装swoole
+### 前提 
+
+安装swoole
 
 ```
  git clone https://github.com/swoole/swoole-src.git
@@ -54,3 +56,29 @@ composer require "jianyan74/yii2-websocket"
   # 重启 
   php ./yii web-socket/restart
    ```
+   
+### 测试
+
+```
+<script>
+    var wsl = 'wss://[to your url]:9501';
+    ws = new WebSocket(wsl);// 新建立一个连接
+    // 如下指定事件处理
+    ws.onopen = function () {
+        // ws.send('Test!');
+    };
+    // 接收消息
+    ws.onmessage = function (evt) {
+        console.log(evt.data);
+        /*ws.close();*/
+    };
+    // 关闭
+    ws.onclose = function (evt) {
+        console.log('WebSocketClosed!');
+    };
+    // 报错
+    ws.onerror = function (evt) {
+        console.log('WebSocketError!');
+    };
+</script>
+```

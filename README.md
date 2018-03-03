@@ -1,10 +1,10 @@
 ## Yii2 WebSocket
 
-即时通讯,直播间demo
+可以做即时通讯,小程序的小游戏等等
 
 ### 前提 
 
-安装swoole
+服务器安装swoole
 
 ```
  git clone https://github.com/swoole/swoole-src.git

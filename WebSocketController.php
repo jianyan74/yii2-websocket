@@ -6,9 +6,9 @@ use yii\console\Controller;
 use yii\helpers\FileHelper;
 
 /**
- * 启动 php ./yii web-socket/start
- * 停止 php ./yii web-socket/stop
- * 重启 php ./yii web-socket/restart
+ * 启动 php ./yii websocket/start
+ * 停止 php ./yii websocket/stop
+ * 重启 php ./yii websocket/restart
  * Class WebSocketController
  * @package jianyan\websocket
  */

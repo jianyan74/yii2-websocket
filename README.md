@@ -32,7 +32,7 @@ composer require "jianyan74/yii2-websocket"
  
  ```
 // webSocket
-'web-socket' => [
+'websocket' => [
     'class' => 'jianyan\websocket\WebSocketController',
     'server' => 'jianyan\websocket\WebSocketServer',
     'host' => '0.0.0.0',// 监听地址
@@ -52,11 +52,11 @@ composer require "jianyan74/yii2-websocket"
  
   ```
   # 启动 
-  php ./yii web-socket/start
+  php ./yii websocket/start
   # 停止 
-  php ./yii web-socket/stop
+  php ./yii websocket/stop
   # 重启 
-  php ./yii web-socket/restart
+  php ./yii websocket/restart
    ```
    
 ### 测试

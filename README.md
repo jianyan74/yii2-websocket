@@ -85,3 +85,7 @@ composer require "jianyan74/yii2-websocket"
     };
 </script>
 ```
+
+### Demo案例
+
+> [点击跳转](http://rageframe.com/addons/execute.html?route=manual/index&addon=AppManual&name=sys-websocket)

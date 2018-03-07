@@ -39,6 +39,7 @@ composer require "jianyan74/yii2-websocket"
     'port' => 9501,// 监听端口
     'config' => [// 标准的swoole配置项都可以再此加入
         'daemonize' => false,// 守护进程执行
+        'task_worker_num' => 4,//task进程的数量
         'ssl_cert_file' => '',
         'ssl_key_file' => '',
         'pid_file' => __DIR__ . '/../../backend/runtime/logs/server.pid',

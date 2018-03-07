@@ -60,16 +60,11 @@ class WebSocketServer
     {
         // 启动进程
         $this->_server = new swoole_websocket_server($this->_host, $this->_port, $this->_mode, $this->_socketType | SWOOLE_SSL);
-        $this->_server->set([
-            // 以非守护进程执行
-            'daemonize' => $this->_config['daemonize'],
-            // 配置wss
-            'ssl_cert_file' => $this->_config['ssl_cert_file'],
-            'ssl_key_file' => $this->_config['ssl_key_file'],
-        ]);
-
+        $this->_server->set($this->_config);
         $this->_server->on('open', [$this, 'onOpen']);
         $this->_server->on('message', [$this, 'onMessage']);
+        $this->_server->on('task', [$this, 'onTask']);
+        $this->_server->on('finish', [$this, 'onFinish']);
         $this->_server->on('close', [$this, 'onClose']);
         $this->_server->start();
     }
@@ -90,26 +85,125 @@ class WebSocketServer
 
     /**
      * 消息
-     *
      * @param $server
      * @param $frame
+     * @throws \Exception
      */
     public function onMessage($server, $frame)
     {
-        echo "receive from {$frame->fd}:{$frame->data},opcode:{$frame->opcode},fin:{$frame->finish}\n";
-        // 消息发送给自己
-        $server->push($frame->fd, $frame->data);
-        // 消息发送给别人
-        $this->broadcast($frame->fd, $frame->data);
+        // 调试信息
+        echo $frame->data . "\n";
+        //echo "receive from {$frame->fd}:{$frame->data},opcode:{$frame->opcode},fin:{$frame->finish}\n";
+
+        $message = json_decode($frame->data, true);
+        if (!$message)
+        {
+            echo "没有消息内容";
+            return true;
+        }
+
+        // 业务逻辑
+        switch ($message['type'])
+        {
+            // 心跳
+            case 'pong':
+                return true;
+                break;
+
+            // 进入房间(登录)
+            case 'login':
+                // 判断是否有房间号
+                if(!isset($message['room_id']))
+                {
+                    throw new \Exception("\$message['room_id'] not set. client_ip:{$_SERVER['REMOTE_ADDR']} \$message:$message");
+                }
+
+                $_SESSION['room_id'] = $message['room_id'];
+                $_SESSION['client_name'] = $message['client_name'];
+
+                // 转播给当前房间的所有客户端，xx进入聊天室 message {type:login, client_id:xx, name:xx}
+                $new_message = [
+                    'type' => $message['type'],
+                    'client_id' => $frame->fd,
+                    'name' => $message['client_name'],
+                    'time' => date('Y-m-d H:i:s'),
+                ];
+
+                //投递到task广播消息
+                $server->task(json_encode($new_message));
+                break;
+
+            // 评论消息
+            case 'say':
+                // 非法请求
+                if(!isset($_SESSION['room_id']))
+                {
+                    throw new \Exception("\$_SESSION['room_id'] not set. client_ip:{$_SERVER['REMOTE_ADDR']}");
+                }
+
+                $room_id = $_SESSION['room_id'];
+                $client_name = $_SESSION['client_name'];
+                $message['emoji_id'] = isset($message['emoji_id']) ?? '';
+
+                // 私聊
+                if($message['to_client_id'] != 'all')
+                {
+                    $new_message = [
+                        'type' => $message['type'],
+                        'from_client_id'=> $frame->fd,
+                        'from_client_name' =>$client_name,
+                        'to_client_id' => $message['to_client_id'],
+                        'emoji_id' => $message['emoji_id'],
+                        'content' => nl2br(htmlspecialchars($message['content'])),
+                        'time' => date('Y-m-d H:i:s'),
+                    ];
+
+                    // 私发
+                    $server->push($frame->fd, json_encode($new_message));
+                }
+
+                $new_message = [
+                    'type' => $message['type'],
+                    'from_client_id'=> $frame->fd,
+                    'from_client_name' =>$client_name,
+                    'to_client_id' => 'all',
+                    'emoji_id' => $message['emoji_id'],
+                    'content' => nl2br(htmlspecialchars($message['content'])),
+                    'time'=> date('Y-m-d H:i:s'),
+                ];
+
+                // 广播消息
+                $server->task(json_encode($new_message));
+                break;
+
+            // 礼物
+            case 'gift':
+
+                $client_name = $_SESSION['client_name'];
+                $new_message = [
+                    'type' => $message['type'],
+                    'from_client_id'=> $frame->fd,
+                    'from_client_name' => $client_name,
+                    'to_client_id' => 'all',
+                    'gift_id' => $message['gift_id'],
+                    'time'=> date('Y-m-d H:i:s'),
+                ];
+
+                // 广播消息
+                $server->task(json_encode($new_message));
+                break;
+        }
+
+        return true;
     }
 
     /**
      * 关闭连接
      *
-     * @param $ser
+     * @param $server
      * @param $fd
      */
-    public function onClose($ser, $fd)
+    public function onClose($server, $fd)
     {
         echo "client {$fd} closed\n";
         // 删除
@@ -117,35 +211,35 @@ class WebSocketServer
     }
 
     /**
-     * 广播进程
+     * 处理异步任务
      *
-     * @param integer $client_id 客户端id
-     * @param string $msg 广播消息
+     * @param $server
+     * @param $task_id
+     * @param $from_id
+     * @param $data
      */
-    public function broadcast($client_id, $msg)
+    public function onTask($server, $task_id, $from_id, $data)
+    {
+        echo "新 AsyncTask[id=$task_id]" . PHP_EOL;
+
+        $server->finish($data);
+    }
+
+    /**
+     * 处理异步任务的结果
+     *
+     * @param $server
+     * @param $task_id
+     * @param $data
+     */
+    public function onFinish($server, $task_id, $data)
     {
         //广播
         foreach ($this->_table as $cid => $info)
         {
-            if ($client_id != $cid)
-            {
-                $this->_server->push($cid, $msg);
-            }
+            $server->push($cid, $data);
         }
-    }
 
-    /**
-     * 创建内存表
-     *
-     * 数指定表格的最大行数，如果$size不是为2的N次方，如1024、8192,65536等，底层会自动调整为接近的一个数字
-     * 占用的内存总数为 (结构体长度 + KEY长度64字节 + 行尺寸$size) * (1.2预留20%作为hash冲突) * (列尺寸)，如果机器内存不足table会创建失败
-     */
-    private function createTable()
-    {
-        $this->_table = new swoole_table(1024);
-        $this->_table->column('fd', swoole_table::TYPE_INT);
-        //$this->_table->column('name', swoole_table::TYPE_STRING, 255);
-        //$this->_table->column('avatar', swoole_table::TYPE_STRING, 255);
-        $this->_table->create();
+        echo "AsyncTask[$task_id] 完成: $data" . PHP_EOL;
     }
 }

@@ -1,16 +1,18 @@
 <?php
-namespace jianyan\websocket;
+namespace jianyan\websocket\console;
 
-use Yii;
 use yii\console\Controller;
 use yii\helpers\FileHelper;
 
 /**
+ *  websocket 启动方式
+ *
  * 启动 php ./yii websocket/start
  * 停止 php ./yii websocket/stop
  * 重启 php ./yii websocket/restart
+ *
  * Class WebSocketController
- * @package jianyan\websocket
+ * @package jianyan\websocket\console
  */
 class WebSocketController extends Controller
 {
@@ -38,17 +40,23 @@ class WebSocketController extends Controller
     /**
      * 运行的模式
      *
-     * @var
      * SWOOLE_PROCESS 多进程模式（默认）
      * SWOOLE_BASE 基本模式
+     * @var
      */
     public $mode = SWOOLE_BASE;
 
     /**
      * @var
-     * SWOOLE_SOCK_TCP
      */
     public $socketType = SWOOLE_SOCK_TCP;
+
+    /**
+     * 长连接方式
+     *
+     * @var string
+     */
+    public $type = 'ws';
 
     /**
      * swoole 配置
@@ -57,9 +65,13 @@ class WebSocketController extends Controller
      */
     public $config = [
         'daemonize' => false, // 守护进程执行
+        'task_worker_num' => 4,//task进程的数量
         'ssl_cert_file' => '',
         'ssl_key_file' => '',
         'pid_file' => '',
+        'buffer_output_size' => 2 * 1024 *1024, //配置发送输出缓存区内存尺寸
+        'heartbeat_check_interval' => 60,// 心跳检测秒数
+        'heartbeat_idle_time' => 600,// 检查最近一次发送数据的时间和当前时间的差，大于则强行关闭
     ];
 
     /**
@@ -71,7 +83,7 @@ class WebSocketController extends Controller
     {
         if ($this->getPid() !== false)
         {
-            $this->stderr("服务已经启动");
+            $this->stderr("服务已经启动...");
             exit(1);
         }
 
@@ -79,7 +91,7 @@ class WebSocketController extends Controller
         $this->setPid();
 
         // 运行
-        $ws = new $this->server($this->host, $this->port, $this->mode, $this->socketType, $this->config);
+        $ws = new $this->server($this->host, $this->port, $this->mode, $this->socketType, $this->type, $this->config);
         $ws->run();
 
         $this->stdout("服务正在运行,监听 {$this->host}:{$this->port}" . PHP_EOL);
@@ -111,17 +123,17 @@ class WebSocketController extends Controller
 
         if ($time > 100)
         {
-            $this->stderr("服务停止超时" . PHP_EOL);
+            $this->stderr("服务停止超时..." . PHP_EOL);
             exit(1);
         }
 
         if( $this->getPid() === false )
         {
-            $this->stdout("服务重启成功" . PHP_EOL);
+            $this->stdout("服务重启成功..." . PHP_EOL);
         }
         else
         {
-            $this->stderr("服务停止错误, 请手动处理杀死进程" . PHP_EOL);
+            $this->stderr("服务停止错误, 请手动处理杀死进程..." . PHP_EOL);
         }
 
         $this->actionStart();
@@ -140,7 +152,7 @@ class WebSocketController extends Controller
         }
         else
         {
-            $this->stdout("服务未运行!" . PHP_EOL);
+            $this->stdout("服务未运行..." . PHP_EOL);
             exit(1);
         }
     }
